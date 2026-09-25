@@ -20,6 +20,10 @@ import { IconProp } from '@fortawesome/fontawesome-svg-core';
 import { env } from '../env';
 import styles from '../style/homepage.module.scss';
 
+const docsUrl = process.env.NEXT_PUBLIC_BASE_PATH
+    ? process.env.NEXT_PUBLIC_SPARK_DOCS_URL!
+    : `${env.NEXT_PUBLIC_SPARK_BASE_URL}/docs`;
+
 const Index: NextPageWithLayout = () => {
     const { setSelectedFile } = useContext(SelectedFileContext);
     const router = useRouter();
@@ -44,7 +48,11 @@ const Navigation = () => {
             <Link title="Downloads" icon={faArrowCircleDown} url="download">
                 Download the latest version of spark.
             </Link>
-            <Link title="Documentation" icon={faBook} url="docs">
+            <Link
+                title="Documentation"
+                icon={faBook}
+                url={process.env.NEXT_PUBLIC_BASE_PATH ? docsUrl : 'docs'}
+            >
                 Read the documentation and usage guides.
             </Link>
         </nav>
@@ -132,15 +140,11 @@ const ViewerSection = ({
             <ol>
                 <li>
                     Generate a{' '}
-                    <a
-                        href={`${env.NEXT_PUBLIC_SPARK_BASE_URL}/docs/Command-Usage#spark-profiler`}
-                    >
+                    <a href={`${docsUrl}/Command-Usage#spark-profiler`}>
                         profile
                     </a>{' '}
                     or{' '}
-                    <a
-                        href={`${env.NEXT_PUBLIC_SPARK_BASE_URL}/docs/Command-Usage#spark-heapsummary`}
-                    >
+                    <a href={`${docsUrl}/Command-Usage#spark-heapsummary`}>
                         heap summary
                     </a>{' '}
                     using the appropriate spark commands.

@@ -155,7 +155,13 @@ const DownloadPage = ({
             <br />
             <p>
                 Once you&apos;ve got spark installed, head over to the{' '}
-                <a href={`${env.NEXT_PUBLIC_SPARK_BASE_URL}/docs`}>
+                <a
+                    href={
+                        process.env.NEXT_PUBLIC_BASE_PATH
+                            ? process.env.NEXT_PUBLIC_SPARK_DOCS_URL
+                            : `${env.NEXT_PUBLIC_SPARK_BASE_URL}/docs`
+                    }
+                >
                     documentation
                 </a>{' '}
                 to learn how to use it!

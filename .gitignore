@@ -12,6 +12,7 @@ src/viewer/proto/spark_pb.ts
 
 # production
 /build
+/out
 
 # misc
 .DS_Store

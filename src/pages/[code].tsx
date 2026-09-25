@@ -1,4 +1,4 @@
-import { GetServerSidePropsContext } from 'next';
+import { GetStaticPaths, GetStaticProps } from 'next';
 import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import { Suspense } from 'react';
@@ -30,17 +30,21 @@ export default function ViewerPage({ code }: ViewerPageProps) {
 }
 
 const ThumbnailMetaTags = ({ code }: ViewerPageProps) => {
+    const thumbnailUrl = process.env.NEXT_PUBLIC_BASE_PATH
+        ? process.env.NEXT_PUBLIC_SPARK_THUMBNAIL_SERVICE_URL
+        : `${env.NEXT_PUBLIC_SPARK_BASE_URL}/thumb`;
+
     return (
         <Head>
             <title>{`spark | ${code}`}</title>
             <meta
                 property="og:image"
-                content={`${env.NEXT_PUBLIC_SPARK_BASE_URL}/thumb/${code}.png`}
+                content={`${thumbnailUrl}/${code}.png`}
                 key="og-image"
             />
             <meta
                 name="twitter:image"
-                content={`${env.NEXT_PUBLIC_SPARK_BASE_URL}/thumb/${code}.png`}
+                content={`${thumbnailUrl}/${code}.png`}
                 key="twitter-image"
             />
             <meta
@@ -52,12 +56,14 @@ const ThumbnailMetaTags = ({ code }: ViewerPageProps) => {
     );
 };
 
-// Just pass the query parameter to the component during SSR
-// (seems like a bit of a waste, but it's the only way as this page is a dynamic route)
-export async function getServerSideProps({
-    query,
-    res,
-}: GetServerSidePropsContext) {
-    res.setHeader('Cache-Control', 'public, maxage=31536000');
-    return { props: { code: query.code } };
-}
+export const getStaticPaths: GetStaticPaths = async () => ({
+    paths: [{ params: { code: '_' } }],
+    fallback: process.env.GITHUB_PAGES === 'true' ? false : 'blocking',
+});
+
+export const getStaticProps: GetStaticProps<ViewerPageProps> = async ({
+    params,
+}) => ({
+    props: { code: params?.code as string },
+    revalidate: process.env.GITHUB_PAGES === 'true' ? false : 31536000,
+});

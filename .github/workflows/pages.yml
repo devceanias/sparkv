@@ -1,0 +1,52 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Yarn Classic
+        run: |
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
+      - run: yarn install --frozen-lockfile
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Build static site
+        env:
+          GITHUB_PAGES: 'true'
+        run: |
+          NEXT_PUBLIC_SPARK_BASE_URL="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/sparkv" yarn build
+      - name: Upload static site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

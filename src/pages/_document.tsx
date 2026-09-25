@@ -14,14 +14,14 @@ export default function Document() {
                     content="spark is a performance profiler for Minecraft clients, servers, and proxies."
                 />
                 <link
-                    href="/assets/logo-inverted-512.png"
+                    href={`${process.env.NEXT_PUBLIC_BASE_PATH}/assets/logo-inverted-512.png`}
                     rel="shortcut icon"
                     sizes="512x512"
                     type="image/png"
                 />
                 <link
                     rel="apple-touch-icon"
-                    href="/assets/logo-inverted-160.png"
+                    href={`${process.env.NEXT_PUBLIC_BASE_PATH}/assets/logo-inverted-160.png`}
                 />
 
                 {host === 'spark.lucko.me' && (
