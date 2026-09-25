@@ -5,11 +5,11 @@ const pages = process.env.GITHUB_PAGES === 'true';
 
 const nextConfig: NextConfig = {
     output: pages ? 'export' : 'standalone',
-    basePath: pages ? '/sparkv' : undefined,
+    basePath: undefined,
     trailingSlash: pages,
     images: { unoptimized: pages },
     env: {
-        NEXT_PUBLIC_BASE_PATH: pages ? '/sparkv' : '',
+        NEXT_PUBLIC_BASE_PATH: '',
         NEXT_PUBLIC_SPARK_DOCS_URL: env.SPARK_DOCS_URL,
         NEXT_PUBLIC_SPARK_THUMBNAIL_SERVICE_URL:
             env.SPARK_THUMBNAIL_SERVICE_URL,
