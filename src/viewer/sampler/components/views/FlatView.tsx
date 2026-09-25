@@ -3,6 +3,7 @@ import {
     Dispatch,
     SetStateAction,
     useContext,
+    useMemo,
     useState,
 } from 'react';
 import TextBox from '../../../../components/TextBox';
@@ -10,7 +11,7 @@ import FlatThreadVirtualNode from '../../node/FlatThreadVirtualNode';
 import SamplerData from '../../SamplerData';
 import { FlatViewData } from '../../worker/FlatViewGenerator';
 import { LabelModeContext } from '../SamplerContext';
-import BaseNode from '../tree/BaseNode';
+import Tree from '../tree/Tree';
 import BottomUpButton from './button/BottomUpButton';
 import LabelModeButton from './button/LabelModeButton';
 import SelfTimeModeButton from './button/SelfTimeModeButton';
@@ -38,6 +39,11 @@ export default function FlatView({
     const view = selfTimeMode
         ? viewData?.flatSelfTime
         : viewData?.flatTotalTime;
+    const roots = useMemo(
+        () =>
+            view?.map(thread => new FlatThreadVirtualNode(data, thread)) || [],
+        [data, view]
+    );
 
     return (
         <div className="flatview">
@@ -56,17 +62,9 @@ export default function FlatView({
             {!view ? (
                 <TextBox>Loading...</TextBox>
             ) : (
-                <div className="stack">
-                    <BottomUpContext.Provider value={bottomUp}>
-                        {view.map(thread => (
-                            <BaseNode
-                                parents={[]}
-                                node={new FlatThreadVirtualNode(data, thread)}
-                                key={thread.name}
-                            />
-                        ))}
-                    </BottomUpContext.Provider>
-                </div>
+                <BottomUpContext.Provider value={bottomUp}>
+                    <Tree roots={roots} reverse={bottomUp} />
+                </BottomUpContext.Provider>
             )}
         </div>
     );

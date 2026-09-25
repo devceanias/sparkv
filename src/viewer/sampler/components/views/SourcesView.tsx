@@ -1,13 +1,10 @@
-import { Dispatch, SetStateAction, useContext, useState } from 'react';
+import { Dispatch, SetStateAction, useContext, useMemo, useState } from 'react';
 import TextBox from '../../../../components/TextBox';
 import SourceThreadVirtualNode from '../../node/SourceThreadVirtualNode';
 import SamplerData from '../../SamplerData';
-import {
-    SourcesViewData,
-    SourceViewData,
-} from '../../worker/SourceViewGenerator';
+import { SourcesViewData } from '../../worker/SourceViewGenerator';
 import { LabelModeContext, MetadataContext } from '../SamplerContext';
-import BaseNode from '../tree/BaseNode';
+import Tree from '../tree/Tree';
 import LabelModeButton from './button/LabelModeButton';
 import MergeModeButton from './button/MergeModeButton';
 import SourcesViewHeader from './header/SourcesViewHeader';
@@ -27,6 +24,31 @@ export default function SourcesView({
     const labelMode = useContext(LabelModeContext);
     const [merged, setMerged] = useState(true);
     const view = merged ? viewData?.sourcesMerged : viewData?.sourcesSeparate;
+    const metadata = useContext(MetadataContext)!;
+    const groups = useMemo(
+        () =>
+            view?.map(({ source, threads }) => {
+                const sourceInfo = metadata.sources[source.toLowerCase()];
+                return {
+                    name: source,
+                    heading: (
+                        <>
+                            {source}{' '}
+                            {sourceInfo && (
+                                <span className="version">
+                                    ({formatVersion(sourceInfo.version)})
+                                </span>
+                            )}
+                        </>
+                    ),
+                    roots: threads.map(
+                        thread => new SourceThreadVirtualNode(data, thread)
+                    ),
+                };
+            }) || [],
+        [view, data, metadata.sources]
+    );
+    const roots = useMemo(() => groups.flatMap(group => group.roots), [groups]);
 
     return (
         <div className="sourceview">
@@ -42,13 +64,7 @@ export default function SourcesView({
                 <TextBox>Loading...</TextBox>
             ) : (
                 <>
-                    {view.map(viewData => (
-                        <SourceSection
-                            data={data}
-                            viewData={viewData}
-                            key={viewData.source}
-                        />
-                    ))}
+                    <Tree roots={roots} groups={groups} />
                     <OtherSourcesSection
                         alreadyShown={view.map(s => s.source)}
                     />
@@ -60,38 +76,6 @@ export default function SourcesView({
 
 const formatVersion = (version: string) => {
     return version.startsWith('v') ? version : 'v' + version;
-};
-
-interface SourceSectionProps {
-    data: SamplerData;
-    viewData: SourceViewData;
-}
-
-const SourceSection = ({ data, viewData }: SourceSectionProps) => {
-    const { source, threads } = viewData;
-
-    const metadata = useContext(MetadataContext)!;
-    const sourceInfo = metadata.sources[source.toLowerCase()];
-
-    return (
-        <div className="stack">
-            <h2>
-                {source}{' '}
-                {sourceInfo && (
-                    <span className="version">
-                        ({formatVersion(sourceInfo.version)})
-                    </span>
-                )}
-            </h2>
-            {threads.map(thread => (
-                <BaseNode
-                    parents={[]}
-                    node={new SourceThreadVirtualNode(data, thread)}
-                    key={thread.name}
-                />
-            ))}
-        </div>
-    );
 };
 
 const OtherSourcesSection = ({ alreadyShown }: { alreadyShown: string[] }) => {

@@ -38,6 +38,7 @@ export interface ControlsProps {
     flameData?: VirtualNode;
     setFlameData: Dispatch<SetStateAction<VirtualNode | undefined>>;
     searchQuery: SearchQuery;
+    onExportJson: () => void;
 }
 
 export default function Controls({
@@ -59,6 +60,7 @@ export default function Controls({
     flameData,
     setFlameData,
     searchQuery,
+    onExportJson,
 }: ControlsProps) {
     return (
         <div className={styles.controls}>
@@ -86,6 +88,14 @@ export default function Controls({
                     />
                     <FlameButton data={data} setFlameData={setFlameData} />
                     <ExportButton exportCallback={exportCallback} />
+                    <button
+                        className="button"
+                        onClick={onExportJson}
+                        title="Export profile data as JSON"
+                        aria-label="Export JSON"
+                    >
+                        JSON
+                    </button>
                     <SearchBar searchQuery={searchQuery} />
                 </>
             ) : (

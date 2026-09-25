@@ -1,142 +1,123 @@
+import { faCopy } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classnames from 'classnames';
-import React, { useContext, useMemo, useState } from 'react';
-import { useContextMenu } from 'react-contexify';
+import React, { ReactNode, useContext } from 'react';
+import { TreeEntry } from '../../data/TreeNavigation';
 import SourceThreadVirtualNode from '../../node/SourceThreadVirtualNode';
-import VirtualNode from '../../node/VirtualNode';
 import {
     HighlightedContext,
     InfoPointsContext,
     MappingsContext,
-    SearchQueryContext,
-    TimeSelectorContext,
 } from '../SamplerContext';
-import { BottomUpContext } from '../views/FlatView';
+import InfoPoint from './InfoPoint';
 import LineNumber from './LineNumber';
 import Name from './Name';
 import NodeInfo from './NodeInfo';
 
-import 'react-contexify/dist/ReactContexify.css';
-import InfoPoint from './InfoPoint';
-
-export interface BaseNodeProps {
-    parents: VirtualNode[];
-    node: VirtualNode;
-    forcedTime?: number;
+interface BaseNodeProps {
+    entry: TreeEntry;
+    root?: TreeEntry;
+    visible: Set<TreeEntry>;
+    expanded: Set<TreeEntry>;
+    collapsed: Set<TreeEntry>;
+    hot: Set<TreeEntry>;
+    matches: Set<TreeEntry>;
+    selected?: TreeEntry;
+    idFor: (entry: TreeEntry) => string;
+    onToggle: (entry: TreeEntry) => void;
+    onSelect: (entry: TreeEntry) => void;
+    onMenu: (event: React.MouseEvent, entry: TreeEntry) => void;
+    onCopy: (entry: TreeEntry) => void;
+    onOwner: (owner: string) => void;
+    tools?: ReactNode;
 }
 
-// We use React.memo to avoid re-renders. This is because the trees we work with are really deep.
-const BaseNode = React.memo(({ parents, node, forcedTime }: BaseNodeProps) => {
+const BaseNode = React.memo(function BaseNode({
+    entry,
+    root,
+    visible,
+    expanded,
+    collapsed,
+    hot,
+    matches,
+    selected,
+    idFor,
+    onToggle,
+    onSelect,
+    onMenu,
+    onCopy,
+    onOwner,
+    tools,
+}: BaseNodeProps) {
     const mappings = useContext(MappingsContext)!;
     const infoPoints = useContext(InfoPointsContext)!;
     const highlighted = useContext(HighlightedContext)!;
-    const searchQuery = useContext(SearchQueryContext)!;
-    const timeSelector = useContext(TimeSelectorContext)!;
-
-    const bottomUp = useContext(BottomUpContext) && parents.length !== 0;
-
-    const directParent =
-        parents.length !== 0 ? parents[parents.length - 1] : null;
-
-    const [expanded, setExpanded] = useState(() => {
-        if (highlighted.check(node)) {
-            return true;
-        }
-        if (directParent == null) {
-            return false;
-        }
-
-        const nodes = bottomUp
-            ? directParent.getParents()
-            : directParent.getChildren();
-
-        const count = nodes.filter(n => searchQuery.matches(n)).length;
-        return count <= 1;
-    });
-
-    const parentsForChildren = useMemo(
-        () => parents.concat([node]),
-        [parents, node]
-    );
-
-    const { show } = useContextMenu({ id: 'sampler-cm' });
-
-    if (!searchQuery.matches(node)) {
-        return null;
-    }
-
-    const classNames = classnames({
-        node: true,
-        collapsed: !expanded,
-        parent: parents.length === 0,
-    });
-    const nodeInfoClassNames = classnames({
-        'node-info': true,
-        'bookmarked': highlighted.has(node),
-    });
-
-    const nodeTime = timeSelector.getTime(node);
-    const threadTime =
-        parents.length === 0 ? nodeTime : timeSelector.getTime(parents[0]);
-
-    function handleClick(e: React.MouseEvent<HTMLElement>) {
-        if (e.altKey) {
-            highlighted.toggle(node);
-        } else {
-            setExpanded(!expanded);
-        }
-    }
-
-    function handleContextMenu(event: React.MouseEvent<HTMLElement>) {
-        event.preventDefault();
-        show({ event, props: { node } });
-    }
-
-    const time = bottomUp ? forcedTime || nodeTime : nodeTime;
-    const selfTime = bottomUp
-        ? 0
-        : time -
-          node
-              .getChildren()
-              .reduce((acc, n) => acc + timeSelector.getTime(n), 0);
-
-    if (time === 0 && nodeTime === 0) {
-        return null;
-    }
-
-    let significance;
-    let importance;
-    if (!directParent) {
-        significance = 1;
-        importance = 0;
-    } else {
-        const parentSourceTime =
-            directParent instanceof SourceThreadVirtualNode &&
-            directParent.getSourceTime();
-        const parentTime =
-            parentSourceTime || timeSelector.getTime(directParent);
-
-        significance = forcedTime
-            ? 0.5
-            : nodeTime < parentTime
-              ? nodeTime / parentTime
-              : parentTime / nodeTime;
-        importance = parentTime !== nodeTime ? significance : 0;
-    }
+    const { node, parent } = entry;
+    const isExpanded = expanded.has(entry) && !collapsed.has(entry);
+    const thread = entry.parent
+        ? (() => {
+              let current = entry;
+              while (current.parent) current = current.parent;
+              return current.total;
+          })()
+        : entry.total;
+    const parentTime = parent?.total || entry.total;
+    const significance = parent
+        ? Math.min(entry.total, parentTime) /
+          (Math.max(entry.total, parentTime) || 1)
+        : 1;
+    const importance = parent && parentTime !== entry.total ? significance : 0;
+    const children = entry.children
+        .filter(child => visible.has(child))
+        .sort((a, b) => b.total - a.total);
 
     return (
-        <li className={classNames}>
+        <li
+            className={classnames('node', {
+                collapsed: !isExpanded,
+                parent: !parent || entry === root,
+            })}
+        >
             <div
-                className={nodeInfoClassNames}
-                onClick={handleClick}
-                onContextMenu={handleContextMenu}
+                id={idFor(entry)}
+                className={classnames('node-info', {
+                    'bookmarked': highlighted.has(node),
+                    'search-match': matches.has(entry),
+                    'selected-node': selected === entry,
+                    'hot-path': hot.has(entry),
+                })}
+                onClick={event => {
+                    if (event.altKey) highlighted.toggle(node);
+                    else {
+                        onSelect(entry);
+                        onToggle(entry);
+                    }
+                }}
+                onContextMenu={event => {
+                    event.preventDefault();
+                    onSelect(entry);
+                    onMenu(event, entry);
+                }}
             >
                 <NodeInfo
-                    time={time}
-                    selfTime={selfTime}
-                    threadTime={threadTime}
+                    time={entry.total}
+                    selfTime={
+                        node instanceof SourceThreadVirtualNode
+                            ? Math.max(
+                                  0,
+                                  entry.total -
+                                      entry.children.reduce(
+                                          (sum, child) => sum + child.total,
+                                          0
+                                      )
+                              )
+                            : (entry.self ?? 0)
+                    }
+                    threadTime={thread}
                     importance={importance}
                     significance={significance}
                     source={node.getSource()}
+                    isSourceRoot={node instanceof SourceThreadVirtualNode}
                     infoPoint={
                         <InfoPoint
                             node={node}
@@ -144,38 +125,59 @@ const BaseNode = React.memo(({ parents, node, forcedTime }: BaseNodeProps) => {
                             lookup={infoPoints}
                         />
                     }
-                    isSourceRoot={node instanceof SourceThreadVirtualNode}
                 >
                     <Name details={node.getDetails()} mappings={mappings} />
-                    <LineNumber node={node} parent={directParent} />
+                    <LineNumber node={node} parent={parent?.node || null} />
+                    {entry.category && (
+                        <button
+                            className="owner-label"
+                            title={entry.owner || entry.category}
+                            onClick={event => {
+                                event.stopPropagation();
+                                if (entry.owner) onOwner(entry.owner);
+                            }}
+                        >
+                            {entry.owner || entry.category}
+                        </button>
+                    )}
+                    <button
+                        className="node-copy"
+                        title="Copy branch"
+                        aria-label="Copy branch"
+                        onClick={event => {
+                            event.stopPropagation();
+                            onCopy(entry);
+                        }}
+                    >
+                        <FontAwesomeIcon icon={faCopy} />
+                    </button>
                 </NodeInfo>
             </div>
-            {expanded && (
+            {tools}
+            {isExpanded && children.length > 0 && (
                 <ul className="children">
-                    {(bottomUp ? node.getParents() : node.getChildren())
-                        .sort(
-                            (a, b) =>
-                                timeSelector.getTime(b) -
-                                timeSelector.getTime(a)
-                        )
-                        .map((node, i) => (
-                            <BaseNode
-                                node={node}
-                                forcedTime={
-                                    bottomUp &&
-                                    (forcedTime || parents.length === 2)
-                                        ? time
-                                        : undefined
-                                }
-                                parents={parentsForChildren}
-                                key={i}
-                            />
-                        ))}
+                    {children.map(child => (
+                        <BaseNode
+                            key={idFor(child)}
+                            entry={child}
+                            root={root}
+                            visible={visible}
+                            expanded={expanded}
+                            collapsed={collapsed}
+                            hot={hot}
+                            matches={matches}
+                            selected={selected}
+                            idFor={idFor}
+                            onToggle={onToggle}
+                            onSelect={onSelect}
+                            onMenu={onMenu}
+                            onCopy={onCopy}
+                            onOwner={onOwner}
+                        />
+                    ))}
                 </ul>
             )}
         </li>
     );
 });
-BaseNode.displayName = 'BaseNode';
-
 export default BaseNode;

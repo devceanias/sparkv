@@ -44,7 +44,7 @@
                     }
                 }
 
-                &:hover + ul {
+                &:hover ~ ul {
                     background: var(--bg-secondary);
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
                     border-radius: 3px;
@@ -52,6 +52,18 @@
 
                 &.bookmarked {
                     box-shadow: inset 0 0 0 100vmax rgba(134, 0, 0, 0.5);
+                }
+
+                &.search-match .name {
+                    background-color: rgba(255, 159, 67, 0.16);
+                }
+
+                &.selected-node {
+                    outline: 1px solid var(--border-light);
+                }
+
+                &.hot-path {
+                    border-left: 3px solid var(--accent-orange);
                 }
             }
 
@@ -99,6 +111,31 @@
                 padding: 0 6px;
                 margin: 0 5px;
                 background-color: rgba(255, 159, 67, 0.1);
+            }
+
+            .owner-label {
+                font-size: 80%;
+                color: var(--text-muted);
+                background: var(--bg-tertiary);
+                border: 0;
+                border-radius: 3px;
+                padding: 1px 4px;
+                margin-left: 6px;
+                cursor: pointer;
+            }
+
+            .node-copy {
+                opacity: 0.4;
+                background: transparent;
+                border: 0;
+                color: var(--text-muted);
+                cursor: pointer;
+                margin-left: 5px;
+            }
+
+            .node-info:hover .node-copy,
+            .node-copy:focus-visible {
+                opacity: 1;
             }
 
             .bar {
@@ -235,6 +272,137 @@
         .no-results {
             font-size: 130%;
             color: var(--accent-primary);
+        }
+
+        .tree-tools,
+        .tree-crumbs,
+        .tree-inspector {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 8px 12px;
+            color: var(--text-secondary);
+            font-size: 13px;
+
+            button {
+                background: var(--bg-tertiary);
+                border: 1px solid var(--border-light);
+                border-radius: 3px;
+                color: var(--text-secondary);
+                padding: 3px 7px;
+                cursor: pointer;
+            }
+
+            input {
+                width: 65px;
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+                border: 1px solid var(--border-light);
+            }
+        }
+
+        .tree-inspector {
+            padding: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+        }
+
+        .tree-options {
+            position: relative;
+
+            summary {
+                cursor: pointer;
+            }
+
+            .tree-options-content {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 8px;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-light);
+                border-radius: 4px;
+            }
+        }
+
+        .tree-scoped-tools {
+            margin-left: 20px;
+
+            strong {
+                max-width: 280px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
+
+        .tree-help {
+            color: var(--text-muted);
+            cursor: help;
+            font-size: 13px;
+            margin-left: 3px;
+        }
+
+        .tree-help-tooltip {
+            max-width: 340px;
+            line-height: 1.4;
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            z-index: 20;
+        }
+
+        .export-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 30;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.65);
+            padding: 12px;
+        }
+
+        .export-dialog {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 20px;
+            width: min(440px, 100%);
+            display: grid;
+            gap: 12px;
+
+            h2,
+            p {
+                margin: 0;
+            }
+            p {
+                color: var(--text-muted);
+                font-size: 13px;
+            }
+            label {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            select,
+            button {
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+                border: 1px solid var(--border-light);
+                padding: 5px;
+            }
+            fieldset {
+                display: grid;
+                gap: 6px;
+                border: 1px solid var(--border-light);
+            }
+            .export-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+            }
         }
 
         .contexify {

@@ -9,7 +9,8 @@
         "build": "yarn proto && next build",
         "start": "next start",
         "format": "prettier --write '**/*.ts' '**/*.tsx' '**/*.scss'",
-        "lint": "next lint"
+        "lint": "next lint",
+        "test": "node --test tests/tree-navigation.test.js"
     },
     "dependencies": {
         "@fortawesome/fontawesome-svg-core": "^6.7.2",

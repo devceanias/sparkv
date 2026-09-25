@@ -1,7 +1,5 @@
 import dynamic from 'next/dynamic';
 import { Suspense, useEffect, useState } from 'react';
-import { Item, ItemParams, Menu } from 'react-contexify';
-import 'react-contexify/dist/ReactContexify.css';
 import { Tooltip } from 'react-tooltip';
 import styles from '../../../style/sampler.module.scss';
 import VersionWarning from '../../common/components/VersionWarning';
@@ -11,6 +9,7 @@ import useSocketClient from '../../common/hooks/useSocketClient';
 import useToggle from '../../common/hooks/useToggle';
 import { ExportCallback } from '../../common/logic/export';
 import { SamplerMetadata } from '../../proto/spark_pb';
+import { TreeEntry } from '../data/TreeNavigation';
 import useHighlight from '../hooks/useHighlight';
 import useInfoPoints from '../hooks/useInfoPoints';
 import useMappings from '../hooks/useMappings';
@@ -23,6 +22,7 @@ import { FlatViewData } from '../worker/FlatViewGenerator';
 import RemoteSamplerWorker from '../worker/RemoteSamplerWorker';
 import { SourcesViewData } from '../worker/SourceViewGenerator';
 import Controls from './controls/Controls';
+import ExportDialog from './ExportDialog';
 import Flame from './flamegraph/Flame';
 import NoData from './misc/NoData';
 import SocketInfo from './misc/SocketInfo';
@@ -50,7 +50,7 @@ export default function Sampler({
     setMetadata,
     exportCallback,
 }: SamplerProps) {
-    const searchQuery = useSearchQuery(data);
+    const searchQuery = useSearchQuery();
     const highlighted = useHighlight();
     const [labelMode, setLabelMode] = useState(false);
     const timeSelector = useTimeSelector(
@@ -66,6 +66,8 @@ export default function Sampler({
         true
     );
     const [showSettings, setShowSettings] = useState<boolean>(false);
+    const [showExport, setShowExport] = useState(false);
+    const [selectedBranch, setSelectedBranch] = useState<TreeEntry>();
     const [showSocketInfo, setShowSocketInfo] = useToggle(
         'prefShowSocket',
         false
@@ -133,24 +135,6 @@ export default function Sampler({
 
     const metadataToggle = useMetadataToggle();
 
-    // Callback function for the "Toggle bookmark" context menu button
-    function handleHighlight(args: ItemParams<{ node: VirtualNode }>) {
-        if (!args.props) return;
-        highlighted.toggle(args.props.node);
-    }
-
-    // Callback function for the "Clear all bookmarks" context menu button
-    function handleHighlightClear() {
-        highlighted.clear();
-    }
-
-    // Callback function for the "View as Flame Graph" context menu button
-    function handleFlame(args: ItemParams<{ node: VirtualNode }>) {
-        const node = args.props?.node;
-        if (!node) return;
-        setFlameData(node);
-    }
-
     const supported =
         metadata?.platform?.sparkVersion && metadata.platform.sparkVersion >= 2;
 
@@ -175,6 +159,7 @@ export default function Sampler({
                 flameData={flameData}
                 setFlameData={setFlameData}
                 searchQuery={searchQuery}
+                onExportJson={() => setShowExport(true)}
             />
 
             {showSettings && (
@@ -226,6 +211,10 @@ export default function Sampler({
                     labelMode={labelMode}
                     metadata={metadata}
                     timeSelector={timeSelector}
+                    treeActions={{
+                        onSelect: setSelectedBranch,
+                        onFlame: setFlameData,
+                    }}
                 >
                     {view === VIEW_ALL ? (
                         <AllView data={data} setLabelMode={setLabelMode} />
@@ -257,11 +246,15 @@ export default function Sampler({
                 <NoData isConnectedToSocket={!!socket.socket.socket} />
             )}
 
-            <Menu id={'sampler-cm'} theme="dark">
-                <Item onClick={handleFlame}>View as Flame Graph</Item>
-                <Item onClick={handleHighlight}>Toggle bookmark</Item>
-                <Item onClick={handleHighlightClear}>Clear all bookmarks</Item>
-            </Menu>
+            {showExport && (
+                <ExportDialog
+                    data={data}
+                    metadata={metadata}
+                    timeSelector={timeSelector}
+                    selected={selectedBranch}
+                    onClose={() => setShowExport(false)}
+                />
+            )}
         </div>
     );
 }

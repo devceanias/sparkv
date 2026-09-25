@@ -1,10 +1,20 @@
 import { createContext, ReactNode } from 'react';
 import { SamplerMetadata } from '../../proto/spark_pb';
+import { TreeEntry } from '../data/TreeNavigation';
 import { Highlight } from '../hooks/useHighlight';
 import { InfoPointsHook } from '../hooks/useInfoPoints';
 import { SearchQuery } from '../hooks/useSearchQuery';
 import { TimeSelector } from '../hooks/useTimeSelector';
 import { MappingsResolver } from '../mappings/resolver';
+import VirtualNode from '../node/VirtualNode';
+
+export const TreeActionsContext = createContext<
+    | {
+          onSelect: (entry: TreeEntry) => void;
+          onFlame: (node: VirtualNode) => void;
+      }
+    | undefined
+>(undefined);
 
 export const MappingsContext = createContext<MappingsResolver | undefined>(
     undefined
@@ -35,6 +45,7 @@ export default function SamplerContext({
     metadata,
     timeSelector,
     children,
+    treeActions,
 }: {
     mappings: MappingsResolver;
     infoPoints: InfoPointsHook;
@@ -44,6 +55,10 @@ export default function SamplerContext({
     metadata: SamplerMetadata;
     timeSelector: TimeSelector;
     children: ReactNode;
+    treeActions: {
+        onSelect: (entry: TreeEntry) => void;
+        onFlame: (node: VirtualNode) => void;
+    };
 }) {
     // :]
     return (
@@ -56,7 +71,11 @@ export default function SamplerContext({
                                 <TimeSelectorContext.Provider
                                     value={timeSelector}
                                 >
-                                    {children}
+                                    <TreeActionsContext.Provider
+                                        value={treeActions}
+                                    >
+                                        {children}
+                                    </TreeActionsContext.Provider>
                                 </TimeSelectorContext.Provider>
                             </MetadataContext.Provider>
                         </LabelModeContext.Provider>
